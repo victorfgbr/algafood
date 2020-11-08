@@ -7,29 +7,29 @@ import org.springframework.stereotype.Service;
 
 import com.algafood.algafood.domain.exception.EntidadeEmUsoException;
 import com.algafood.algafood.domain.exception.EntidadeNaoEncontradaException;
-import com.algafood.algafood.domain.model.Cozinha;
-import com.algafood.algafood.domain.repository.CozinhaRepository;
+import com.algafood.algafood.domain.model.Estado;
+import com.algafood.algafood.domain.repository.EstadoRepository;
 
 @Service
-public class CadastroCozinhaService {
+public class CadastroEstadoService {
 
 	@Autowired
-	private CozinhaRepository cozinhaRepository;
+	private EstadoRepository estadoRepository;
 
-	public Cozinha salvar(Cozinha cozinha) {
-		return cozinhaRepository.salvar(cozinha);
+	public Estado salvar(Estado estado) {
+		return estadoRepository.salvar(estado);
 	}
 
 	public void remover(Long id) {
 		try {
-			cozinhaRepository.remover(id);
+			estadoRepository.remover(id);
 		} catch (EmptyResultDataAccessException e) {
 			throw new EntidadeNaoEncontradaException(
-					String.format("Não existe um cadastro de cozinha com o código %d", id));
+					String.format("Não existe um cadastro de estado com o código %d", id));
 
 		} catch (DataIntegrityViolationException e) {
 			throw new EntidadeEmUsoException(
-					String.format("Cozinha de código %d não pode ser removida, pois está em uso", id));
+					String.format("Estado de código %d não pode ser removida, pois está em uso", id));
 		}
 
 	}
