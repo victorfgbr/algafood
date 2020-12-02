@@ -16,7 +16,7 @@
   <description>API de delivery de comida</description>
 
   <properties>
-    <java.version>8</java.version>
+    <java.version>11</java.version>
   </properties>
 
   <dependencies>
@@ -51,6 +51,27 @@
     	<groupId>org.projectlombok</groupId>
     	<artifactId>lombok</artifactId>
     </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
   </dependencies>
 
   <build>
@@ -58,6 +79,9 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
