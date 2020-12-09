@@ -5,7 +5,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CozinhaIdInputDTO {
+public class CozinhaIdInput {
 	
 	@NotNull
 	private Long id;

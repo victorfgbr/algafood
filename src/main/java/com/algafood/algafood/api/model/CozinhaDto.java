@@ -3,7 +3,7 @@ package com.algafood.algafood.api.model;
 import lombok.Data;
 
 @Data
-public class CozinhaDTO {
+public class CozinhaDto {
 
 	private Long id;
 	

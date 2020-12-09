@@ -3,12 +3,11 @@ package com.algafood.algafood.api.controller;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import org.springframework.beans.BeanUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -25,13 +24,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.algafood.algafood.api.model.CozinhaDTO;
+import com.algafood.algafood.api.assembler.RestauranteInputDisassembler;
+import com.algafood.algafood.api.assembler.RestauranteModelAssembler;
 import com.algafood.algafood.api.model.RestauranteDTO;
-import com.algafood.algafood.api.model.input.CozinhaIdInputDTO;
-import com.algafood.algafood.api.model.input.RestauranteInputDTO;
+import com.algafood.algafood.api.model.input.CozinhaIdInput;
+import com.algafood.algafood.api.model.input.RestauranteInput;
 import com.algafood.algafood.domain.exception.CozinhaNaoEncontradaException;
 import com.algafood.algafood.domain.exception.NegocioException;
-import com.algafood.algafood.domain.model.Cozinha;
 import com.algafood.algafood.domain.model.Restaurante;
 import com.algafood.algafood.domain.repository.RestauranteRepository;
 import com.algafood.algafood.domain.service.CadastroRestauranteService;
@@ -43,6 +42,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RestauranteController {
 
 	@Autowired
+	ModelMapper modelMapper;
+	
+	@Autowired
+	private RestauranteModelAssembler restauranteModelAssembler;
+	
+	@Autowired
+	private RestauranteInputDisassembler restauranteInputDisassembler;
+	
+	@Autowired
 	private RestauranteRepository restauranteRepository;
 
 	@Autowired
@@ -50,23 +58,23 @@ public class RestauranteController {
 
 	@GetMapping
 	public List<RestauranteDTO> listar() {
-		List<Restaurante> restaurantes = restauranteRepository.findAll();
-		
-		return toListDto(restaurantes); 
+		return restauranteModelAssembler.toCollectionModel(restauranteRepository.findAll());
+
 	}
 
 	@GetMapping("/{restauranteId}")
 	public RestauranteDTO buscar(@PathVariable Long restauranteId) {
 		Restaurante restaurante = cadastroRestaurante.buscarOuFalhar(restauranteId);
-		return toDto(restaurante); 
+		
+		return restauranteModelAssembler.toModel(restaurante);
 	}
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public RestauranteDTO adicionar(@RequestBody @Valid RestauranteInputDTO restauranteInputDto) {
+	public RestauranteDTO adicionar(@RequestBody @Valid RestauranteInput restauranteInput) {
 		try {
-			Restaurante restaurante = toModel(restauranteInputDto);
-			return toDto(cadastroRestaurante.salvar(restaurante));
+			Restaurante restaurante = restauranteInputDisassembler.toDomainObject(restauranteInput);
+			return restauranteModelAssembler.toModel(cadastroRestaurante.salvar(restaurante));
 		}
 		catch (CozinhaNaoEncontradaException e) {
 			throw new NegocioException(e.getMessage(), e);
@@ -75,15 +83,14 @@ public class RestauranteController {
 	
 	@PutMapping("/{restauranteId}")
 	public RestauranteDTO atualizar (@PathVariable Long restauranteId,
-			@RequestBody @Valid RestauranteInputDTO restauranteInputDto) {
+			@RequestBody @Valid RestauranteInput restauranteInput) {
 		
 		try {
-			Restaurante restaurante = toModel(restauranteInputDto);
 			Restaurante restauranteAtual = cadastroRestaurante.buscarOuFalhar(restauranteId);
 			
-			BeanUtils.copyProperties(restaurante, restauranteAtual, "id", "formasPagamento", "endereco", "dataCadastro");
+			restauranteInputDisassembler.copyToDomainObject(restauranteInput, restauranteAtual);
 			
-			return toDto(cadastroRestaurante.salvar(restaurante));
+			return restauranteModelAssembler.toModel(cadastroRestaurante.salvar(restauranteAtual));
 		}
 		catch (CozinhaNaoEncontradaException e) {
 			throw new NegocioException(e.getMessage(), e);
@@ -105,11 +112,11 @@ public class RestauranteController {
 		
 		merge (campos, restauranteAtual, request);
 		
-		RestauranteInputDTO restauranteAtualDto = new RestauranteInputDTO();
+		RestauranteInput restauranteAtualDto = new RestauranteInput();
 		restauranteAtualDto.setNome(restauranteAtual.getNome());
 		restauranteAtualDto.setTaxaFrete(restauranteAtual.getTaxaFrete());
 		
-		CozinhaIdInputDTO cozinhaInputDto = new CozinhaIdInputDTO();
+		CozinhaIdInput cozinhaInputDto = new CozinhaIdInput();
 		cozinhaInputDto.setId(restauranteAtual.getId());
 		restauranteAtualDto.setCozinha(cozinhaInputDto);
 		
@@ -138,40 +145,5 @@ public class RestauranteController {
 		} catch (IllegalArgumentException e) {
 			throw new HttpMessageNotReadableException(e.getMessage(), e, serverHttpRequest);
 		}
-		
 	}
-	
-	private List<RestauranteDTO> toListDto (List<Restaurante> restaurantes) {
-		return restaurantes.stream().map((restaurante) -> toDto(restaurante)).collect(Collectors.toList());
-	}
-	
-	private RestauranteDTO toDto (Restaurante restaurante) {
-		
-		RestauranteDTO restauranteDto = new RestauranteDTO();
-		CozinhaDTO cozinhaDto = new  CozinhaDTO();
-		
-		cozinhaDto.setId(restaurante.getCozinha().getId());
-		cozinhaDto.setNome(restaurante.getCozinha().getNome());
-		
-		restauranteDto.setId(restaurante.getId());
-		restauranteDto.setNome(restaurante.getNome());
-		restauranteDto.setTaxaFrete(restaurante.getTaxaFrete());
-		
-		restauranteDto.setCozinha(cozinhaDto);
-		
-		return restauranteDto;
-	}
-	
-	private Restaurante toModel (RestauranteInputDTO restauranteInput) {
-		Restaurante restaurante = new Restaurante();
-		restaurante.setNome(restauranteInput.getNome());
-		restaurante.setTaxaFrete(restauranteInput.getTaxaFrete());
-		
-		Cozinha cozinha = new Cozinha();
-		cozinha.setId(restauranteInput.getCozinha().getId());
-		restaurante.setCozinha(cozinha);
-		
-		return restaurante;
-	}
-	
 }

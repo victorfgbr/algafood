@@ -10,7 +10,7 @@ import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 @Data
-public class RestauranteInputDTO {
+public class RestauranteInput {
 
 	@NotBlank
 	private String nome;
@@ -21,5 +21,5 @@ public class RestauranteInputDTO {
 	
 	@Valid
 	@NotNull
-	private CozinhaIdInputDTO cozinha;
+	private CozinhaIdInput cozinha;
 }
