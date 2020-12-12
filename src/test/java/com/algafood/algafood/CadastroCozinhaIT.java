@@ -32,12 +32,10 @@ import io.restassured.http.ContentType;
 @TestPropertySource("/application-test.properties")
 public class CadastroCozinhaIT {
 	private static final int COZINHA_ID_INEXISTENTE = 100;
-	private static final int COZINHA_EM_USO = 1;
-	private static final int COZINHA_SEM_USO = 2;
 
-	private Cozinha cozinhaAmericana;
-	private int quantidadeCozinhasCadastradas;
-	private String jsonCorretoCozinhaChinesa;
+	private Cozinha americana;
+	private Cozinha tailandesa;
+	private int qtdCozinhas;	
 	
 	@Autowired
 	private CozinhaRepository cozinhaRepository;
@@ -64,33 +62,60 @@ public class CadastroCozinhaIT {
 		prepararMassaDeDados();
 	}
 	
-	@Test
-	public void deveRetornarStatus200_QuandoConsultarCozinhas() {
-		given()
-			.accept(ContentType.JSON)
-		.when()
-			.get()
-		.then()
-			.statusCode(HttpStatus.OK.value());
-	}
+	private void prepararMassaDeDados () {
+		
+	    tailandesa = new Cozinha();
+	    tailandesa.setNome("Tailandesa");
+	    cozinhaRepository.save(tailandesa);
 
-	@Test
-	public void deveConterCozinhas_QuandoConsultarCozinhas() {
-		given()
-			.accept(ContentType.JSON)
-		.when()
-			.get()
-		.then()
-			.body("", Matchers.hasSize(quantidadeCozinhasCadastradas))
-			.body("nome", hasItems("Tailandesa", "Americana")); 
+	    americana = new Cozinha();
+	    americana.setNome("Americana");
+	    cozinhaRepository.save(americana);
+	    
+	    qtdCozinhas = (int) cozinhaRepository.count();
 	}
 	
 	@Test
-	public void deveRetornarStatus201_quantoCadastrarCozinha () {
-		
-		jsonCorretoCozinhaChinesa = ResourceUtils.getContentFromResource(
+	public void listarCozinhas() {
+		given()
+			.accept(ContentType.JSON)
+		.when()
+			.get()
+		.then()
+			.body("", Matchers.hasSize(qtdCozinhas))
+			.body("nome", hasItems("Tailandesa", "Americana"))
+			.statusCode(HttpStatus.OK.value());
+	}
+	
+	@Test
+	public void detalharCozinhaAmericana () {
+		given()
+			.pathParam("id", americana.getId())
+			.accept(ContentType.JSON)
+		.when()
+			.get("/{id}")
+		.then()
+			.statusCode(HttpStatus.OK.value())
+			.body("id", equalTo(americana.getId().intValue()))
+			.body("nome", equalTo(americana.getNome()));
+	}
+	
+	@Test
+	public void detalharCozinhaInexistente () {
+		given()
+			.pathParam("id", COZINHA_ID_INEXISTENTE)
+			.accept(ContentType.JSON)
+		.when()
+			.get("/{id}")
+		.then()
+			.statusCode(HttpStatus.NOT_FOUND.value());
+	}
+	
+	@Test
+	public void cadastrarCozinhaChinesa () {
+		String jsonCorretoCozinhaChinesa = ResourceUtils.getContentFromResource(
 				"/json/correto/cozinha-chinesa.json");
-		
+
 		given()
 			.body(jsonCorretoCozinhaChinesa)
 			.contentType(ContentType.JSON)
@@ -102,31 +127,57 @@ public class CadastroCozinhaIT {
 	}
 	
 	@Test
-	public void deveRetornarRespostaEStatusCorretos_QuandoConsultarCozinhaExistente() {
+	public void cadastrarCozinhaSemNome () {
+		String jsonCozinhaSemNome = ResourceUtils.getContentFromResource(
+				"/json/incorreto/cozinha-sem-nome.json");
 		given()
-			.pathParam("cozinhaId", cozinhaAmericana.getId())
+			.body(jsonCozinhaSemNome)
+			.contentType(ContentType.JSON)
 			.accept(ContentType.JSON)
 		.when()
-			.get("/{cozinhaId}")
+			.post()
 		.then()
-			.statusCode(HttpStatus.OK.value())
-			.body("nome", equalTo(cozinhaAmericana.getNome()));
+			.statusCode(HttpStatus.BAD_REQUEST.value());
 	}
 	
 	@Test
-	public void deveRetornarNotFound_QuandoConsultarCozinhaInexistente() {
+	public void alterarCozinhaAmericana() {
+
+		String jsonAmericanaAlterado = ResourceUtils.getContentFromResource(
+				"/json/correto/cozinha-americana-alterada.json");
+		
+		// PUT
 		given()
-			.pathParam("cozinhaId", COZINHA_ID_INEXISTENTE)
+			.pathParam("id", americana.getId())
+			.body(jsonAmericanaAlterado)
+			.contentType(ContentType.JSON)
 			.accept(ContentType.JSON)
 		.when()
-			.get("/{cozinhaId}")
+			.put("/{id}")
 		.then()
-			.statusCode(HttpStatus.NOT_FOUND.value());
+			.statusCode(HttpStatus.OK.value());
+		
+		// GET
+		given()
+			.pathParam("id", americana.getId())
+			.accept(ContentType.JSON)
+		.when()
+			.get("/{id}")
+		.then()
+			.statusCode(HttpStatus.OK.value())
+			.body("id", equalTo(americana.getId().intValue()))
+			.body("nome", equalTo(americana.getNome() + "_")); 
 	}
 	
-	public void deveRetornarStatus201_QuandoExcluirCozinhaNaoUtilizada() {
+	@Test
+	public void alterarCozinhaInexistente() {
+		// TODO
+	}
+	
+	@Test
+	public void excluirCozinhaSucesso() {
 		given()
-			.pathParam("cozinhaId", COZINHA_SEM_USO)
+			.pathParam("cozinhaId", americana.getId())
 			.accept(ContentType.JSON)
 		.when()
 			.delete("/{cozinhaId}")
@@ -134,44 +185,32 @@ public class CadastroCozinhaIT {
 			.statusCode(HttpStatus.NO_CONTENT.value());	
 	}
 	
-	public void deveRetornarStatus409_QuandoExcluirCozinhaEmUso() {
-		given()
-			.pathParam("cozinhaId", COZINHA_EM_USO)
-			.accept(ContentType.JSON)
-		.when()
-			.delete("/{cozinhaId}")
-		.then()
-			.statusCode(HttpStatus.CONFLICT.value());
-	}
-	
-	public void deveRetornarStatus404_QuandoExcluirCozinhaInexistente() {
+	@Test
+	public void excluirCozinhaInexistente() {
 		given()
 			.pathParam("cozinhaId", COZINHA_ID_INEXISTENTE)
 			.accept(ContentType.JSON)
 		.when()
 			.delete("/{cozinhaId}")
 		.then()
-			.statusCode(HttpStatus.NOT_FOUND.value());
+			.statusCode(HttpStatus.NOT_FOUND.value());	
 	}
 	
-	private void prepararMassaDeDados () {
+	@Test
+	public void excluirCozinhaEmUso() {
+		Restaurante restaurante = new Restaurante();
+		restaurante.setNome("Pizza Hut");
+		restaurante.setCozinha(americana);
+		restaurante.setTaxaFrete(new BigDecimal(8.99));
+		restauranteRepository.save(restaurante);
 		
-	    Cozinha cozinhaTailandesa = new Cozinha();
-	    cozinhaTailandesa.setNome("Tailandesa");
-	    cozinhaRepository.save(cozinhaTailandesa);
-
-	    cozinhaAmericana = new Cozinha();
-	    cozinhaAmericana.setNome("Americana");
-	    cozinhaRepository.save(cozinhaAmericana);
-	    
-	    quantidadeCozinhasCadastradas = (int) cozinhaRepository.count();
-		
-        Restaurante restaurante = new Restaurante();
-        restaurante.setNome("Thai Thai Delivery");
-        restaurante.setTaxaFrete(new BigDecimal(10));
-        restaurante.setCozinha(cozinhaTailandesa);
-        restauranteRepository.save(restaurante);
-	    
+		given()
+			.pathParam("cozinhaId", americana.getId())
+			.accept(ContentType.JSON)
+		.when()
+			.delete("/{cozinhaId}")
+		.then()
+			.statusCode(HttpStatus.CONFLICT.value());
 	}
-	
+		
 }
