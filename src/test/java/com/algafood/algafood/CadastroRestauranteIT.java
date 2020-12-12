@@ -2,9 +2,11 @@ package com.algafood.algafood;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 
 import java.math.BigDecimal;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,10 +31,6 @@ import io.restassured.http.ContentType;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource("/application-test.properties")
 public class CadastroRestauranteIT {
-	
-    private static final String VIOLACAO_DE_REGRA_DE_NEGOCIO_PROBLEM_TYPE = "Violação de regra de negócio";
-
-    private static final String DADOS_INVALIDOS_PROBLEM_TITLE = "Dados inválidos";
 
     private static final int RESTAURANTE_ID_INEXISTENTE = 100;
 
@@ -48,31 +46,19 @@ public class CadastroRestauranteIT {
     @Autowired
     private RestauranteRepository restauranteRepository;
     
-    private String jsonRestauranteCorreto;
-    private String jsonRestauranteSemFrete;
-    private String jsonRestauranteSemCozinha;
-    private String jsonRestauranteComCozinhaInexistente;
+    private Restaurante restauranteDiAndrezza;
+    private Restaurante restauranteMocoto;
+    private Cozinha cozinhaItaliana;
+    private long qtdRestaurantes;
     
-    private Restaurante burgerTopRestaurante;
-	
 	@Before
 	public void setUp () {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         RestAssured.port = port;
         RestAssured.basePath = "/restaurantes";
+        
 
-        jsonRestauranteCorreto = ResourceUtils.getContentFromResource(
-                "/json/correto/restaurante-new-york-barbecue.json");
-        
-        jsonRestauranteSemFrete = ResourceUtils.getContentFromResource(
-                "/json/incorreto/restaurante-new-york-barbecue-sem-frete.json");
-        
-        jsonRestauranteSemCozinha = ResourceUtils.getContentFromResource(
-                "/json/incorreto/restaurante-new-york-barbecue-sem-cozinha.json");
-        
-        jsonRestauranteComCozinhaInexistente = ResourceUtils.getContentFromResource(
-                "/json/incorreto/restaurante-new-york-barbecue-com-cozinha-inexistente.json");
-        
+
 		System.out.println("Cleaning tables...");
 		databaseCleaner.clearTables();
 		
@@ -81,109 +67,176 @@ public class CadastroRestauranteIT {
 	}
 	
 	private void prepararMassaDeDados () {
-        Cozinha cozinhaBrasileira = new Cozinha();
-        cozinhaBrasileira.setNome("Brasileira");
-        cozinhaRepository.save(cozinhaBrasileira);
+        cozinhaItaliana = new Cozinha();
+        cozinhaItaliana.setNome("Italiana");
+        cozinhaRepository.save(cozinhaItaliana);
 
-        Cozinha cozinhaAmericana = new Cozinha();
-        cozinhaAmericana.setNome("Americana");
-        cozinhaRepository.save(cozinhaAmericana);
+        Cozinha cozinhaNordetisna = new Cozinha();
+        cozinhaNordetisna.setNome("Nordetisna");
+        cozinhaRepository.save(cozinhaNordetisna);
         
-        burgerTopRestaurante = new Restaurante();
-        burgerTopRestaurante.setNome("Burger Top");
-        burgerTopRestaurante.setTaxaFrete(new BigDecimal(10));
-        burgerTopRestaurante.setCozinha(cozinhaAmericana);
-        restauranteRepository.save(burgerTopRestaurante);
+        restauranteDiAndrezza = new Restaurante();
+        restauranteDiAndrezza.setNome("Di Andrezza");
+        restauranteDiAndrezza.setTaxaFrete(new BigDecimal(7.50));
+        restauranteDiAndrezza.setCozinha(cozinhaItaliana);
+        restauranteRepository.save(restauranteDiAndrezza);
         
-        Restaurante comidaMineiraRestaurante = new Restaurante();
-        comidaMineiraRestaurante.setNome("Comida Mineira");
-        comidaMineiraRestaurante.setTaxaFrete(new BigDecimal(10));
-        comidaMineiraRestaurante.setCozinha(cozinhaBrasileira);
-        restauranteRepository.save(comidaMineiraRestaurante);
+        restauranteMocoto = new Restaurante();
+        restauranteMocoto.setNome("Mocotó");
+        restauranteMocoto.setTaxaFrete(new BigDecimal(12.99));
+        restauranteMocoto.setCozinha(cozinhaNordetisna);
+        restauranteRepository.save(restauranteMocoto);
+        
+        qtdRestaurantes = restauranteRepository.count();
 	}
 
+	///////////////////////////////////////////////////////////
+
     @Test
-    public void deveRetornarStatus200_QuandoConsultarRestaurantes() {
+	public void listarRestaurantes () {
         given()
-            .accept(ContentType.JSON)
-        .when()
-            .get()
-        .then()
-            .statusCode(HttpStatus.OK.value());
-    }
-    
-    @Test
-    public void deveRetornarStatus201_QuandoCadastrarRestaurante() {
-        given()
-            .body(jsonRestauranteCorreto)
-            .contentType(ContentType.JSON)
-            .accept(ContentType.JSON)
-        .when()
-            .post()
-        .then()
-            .statusCode(HttpStatus.CREATED.value());
-    }
-    
-    @Test
-    public void deveRetornarStatus400_QuandoCadastrarRestauranteSemTaxaFrete() {
-        given()
-            .body(jsonRestauranteSemFrete)
-            .contentType(ContentType.JSON)
-            .accept(ContentType.JSON)
-        .when()
-            .post()
-        .then()
-            .statusCode(HttpStatus.BAD_REQUEST.value())
-            .body("title", equalTo(DADOS_INVALIDOS_PROBLEM_TITLE));
+	        .accept(ContentType.JSON)
+	    .when()
+	        .get()
+	    .then()
+	    	.body("", Matchers.hasSize((int) qtdRestaurantes))
+	    	.body("nome", hasItems("Di Andrezza", "Mocotó"))
+	        .statusCode(HttpStatus.OK.value());
     }
 
     @Test
-    public void deveRetornarStatus400_QuandoCadastrarRestauranteSemCozinha() {
+	public void detalharRestauranteSucesso () {
         given()
-            .body(jsonRestauranteSemCozinha)
-            .contentType(ContentType.JSON)
-            .accept(ContentType.JSON)
-        .when()
-            .post()
-        .then()
-            .statusCode(HttpStatus.BAD_REQUEST.value())
-            .body("title", equalTo(DADOS_INVALIDOS_PROBLEM_TITLE));
+	        .accept(ContentType.JSON)
+			.pathParam("id", restauranteDiAndrezza.getId())
+	    .when()
+	        .get("/{id}")
+	    .then()
+	    	.body("id", equalTo(restauranteDiAndrezza.getId().intValue()))
+	    	.body("nome", equalTo(restauranteDiAndrezza.getNome()))
+	    	.body("taxaFrete", equalTo(restauranteDiAndrezza.getTaxaFrete().floatValue()))
+	    	.body("cozinha.id", equalTo(restauranteDiAndrezza.getCozinha().getId().intValue()))
+	    	.body("cozinha.nome", equalTo(restauranteDiAndrezza.getCozinha().getNome()))
+	    	.body("ativo", equalTo(restauranteDiAndrezza.getAtivo()))
+	    	.statusCode(HttpStatus.OK.value());
     }
-    
+
     @Test
-    public void deveRetornarStatus400_QuandoCadastrarRestauranteComCozinhaInexistente() {
+	public void detalharRestauranteInexistente () {
         given()
-            .body(jsonRestauranteComCozinhaInexistente)
-            .contentType(ContentType.JSON)
-            .accept(ContentType.JSON)
-        .when()
-            .post()
-        .then()
-            .statusCode(HttpStatus.BAD_REQUEST.value())
-            .body("title", equalTo(VIOLACAO_DE_REGRA_DE_NEGOCIO_PROBLEM_TYPE));
+	        .accept(ContentType.JSON)
+			.pathParam("id", RESTAURANTE_ID_INEXISTENTE)
+	    .when()
+	        .get("/{id}")
+	    .then()
+	    	.statusCode(HttpStatus.NOT_FOUND.value());
     }
-    
+
     @Test
-    public void deveRetornarRespostaEStatusCorretos_QuandoConsultarRestauranteExistente() {
-        given()
-            .pathParam("restauranteId", burgerTopRestaurante.getId())
-            .accept(ContentType.JSON)
-        .when()
-            .get("/{restauranteId}")
-        .then()
-            .statusCode(HttpStatus.OK.value())
-            .body("nome", equalTo(burgerTopRestaurante.getNome()));
+	public void cadastrarRestauranteSucesso () {
+		String jsonRestaurante = ResourceUtils.getContentFromResource(
+				"/json/correto/restaurante-cantina.json");
+		
+		Long idCantina = qtdRestaurantes + 1;
+
+		given()
+			.body(jsonRestaurante)
+			.contentType(ContentType.JSON)
+			.accept(ContentType.JSON)
+		.when()
+			.post()
+		.then()
+	    	.body("id", equalTo(idCantina.intValue()))
+	    	.body("nome", equalTo("Cantina"))
+	    	.body("taxaFrete", equalTo(10.99))
+	    	.body("cozinha.id", equalTo(cozinhaItaliana.getId().intValue()))
+	    	.body("cozinha.nome", equalTo(cozinhaItaliana.getNome()))
+	    	.body("ativo", equalTo(true))
+			.statusCode(HttpStatus.CREATED.value());
     }
-    
+
     @Test
-    public void deveRetornarStatus404_QuandoConsultarRestauranteInexistente() {
-        given()
-            .pathParam("restauranteId", RESTAURANTE_ID_INEXISTENTE)
-            .accept(ContentType.JSON)
-        .when()
-            .get("/{restauranteId}")
-        .then()
-            .statusCode(HttpStatus.NOT_FOUND.value());
+	public void cadastrarRestauranteTaxaFreteNegativa () {
+		String jsonRestaurante = ResourceUtils.getContentFromResource(
+				"/json/correto/restaurante-frete-negativo.json");
+
+		given()
+			.body(jsonRestaurante)
+			.contentType(ContentType.JSON)
+			.accept(ContentType.JSON)
+		.when()
+			.post()
+		.then()
+			.body ("type", equalTo("https://algafood.com.br/dados-invalidos"))
+			.statusCode(HttpStatus.BAD_REQUEST.value());
     }
-     
- }
+        
+    @Test
+	public void cadastrarRestauranteComCozinhaInexistente () {
+		String jsonRestaurante = ResourceUtils.getContentFromResource(
+				"/json/correto/restaurante-cozinha-inexistente.json");
+
+		given()
+			.body(jsonRestaurante)
+			.contentType(ContentType.JSON)
+			.accept(ContentType.JSON)
+		.when()
+			.post()
+		.then()
+			.body ("type", equalTo("https://algafood.com.br/erro-negocio"))
+			.statusCode(HttpStatus.BAD_REQUEST.value());
+    }
+	    
+	@Test
+	public void alterarRestauranteCozinhaInexistente () {
+		String jsonRestaurante = ResourceUtils.getContentFromResource(
+				"/json/correto/restaurante-cozinha-inexistente.json");
+
+		given()
+			.body(jsonRestaurante)
+			.contentType(ContentType.JSON)
+			.accept(ContentType.JSON)
+			.pathParam("id", restauranteDiAndrezza.getId())
+		.when()
+			.put("/{id}")
+		.then()
+			.body ("type", equalTo("https://algafood.com.br/erro-negocio"))
+			.statusCode(HttpStatus.BAD_REQUEST.value());
+	}
+  
+//	@Test
+//	public void alterarRestauranteSucesso() {
+//		// TODO
+//	}
+    
+//	@Test
+//	public void ativarRestauranteExistente () {
+//		// TODO
+//	}
+	
+//	@Test
+//	public void ativarRestauranteInexistente () {
+//		// TODO
+//	}
+	
+//	@Test
+//	public void desativarRestauranteExistente () {
+//		// TODO
+//	}
+	
+//	@Test
+//	public void desativarRestauranteInexistente () {
+//		// TODO
+//	}
+	
+//	@Test
+//	public void excluirRestauranteSucesso () {
+//		// TODO
+//	}
+	
+//	@Test
+//	public void excluirRestauranteInexistente () {
+//		// TODO
+//	}
+	
+}
