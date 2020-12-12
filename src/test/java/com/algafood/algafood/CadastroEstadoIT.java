@@ -180,7 +180,7 @@ public class CadastroEstadoIT {
 		.then()
 			.statusCode(HttpStatus.OK.value())
 			.body("id", equalTo(bahia.getId().intValue()))
-			.body("nome", equalTo(bahia.getNome())); 
+			.body("nome", equalTo("Bhia")); 
 	}
 	
 	@Test
