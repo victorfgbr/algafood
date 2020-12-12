@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 
+import java.math.BigDecimal;
+
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,7 +18,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.algafood.algafood.domain.model.Cozinha;
+import com.algafood.algafood.domain.model.Restaurante;
 import com.algafood.algafood.domain.repository.CozinhaRepository;
+import com.algafood.algafood.domain.repository.RestauranteRepository;
 import com.algafood.algafood.util.DatabaseCleaner;
 import com.algafood.algafood.util.ResourceUtils;
 
@@ -28,6 +32,8 @@ import io.restassured.http.ContentType;
 @TestPropertySource("/application-test.properties")
 public class CadastroCozinhaIT {
 	private static final int COZINHA_ID_INEXISTENTE = 100;
+	private static final int COZINHA_EM_USO = 1;
+	private static final int COZINHA_SEM_USO = 2;
 
 	private Cozinha cozinhaAmericana;
 	private int quantidadeCozinhasCadastradas;
@@ -35,7 +41,10 @@ public class CadastroCozinhaIT {
 	
 	@Autowired
 	private CozinhaRepository cozinhaRepository;
-	
+    
+    @Autowired
+    private RestauranteRepository restauranteRepository;
+    
 	@Autowired
 	private DatabaseCleaner dataBaseCleaner;
 	
@@ -115,6 +124,36 @@ public class CadastroCozinhaIT {
 			.statusCode(HttpStatus.NOT_FOUND.value());
 	}
 	
+	public void deveRetornarStatus201_QuandoExcluirCozinhaNaoUtilizada() {
+		given()
+			.pathParam("cozinhaId", COZINHA_SEM_USO)
+			.accept(ContentType.JSON)
+		.when()
+			.delete("/{cozinhaId}")
+		.then()
+			.statusCode(HttpStatus.NO_CONTENT.value());	
+	}
+	
+	public void deveRetornarStatus409_QuandoExcluirCozinhaEmUso() {
+		given()
+			.pathParam("cozinhaId", COZINHA_EM_USO)
+			.accept(ContentType.JSON)
+		.when()
+			.delete("/{cozinhaId}")
+		.then()
+			.statusCode(HttpStatus.CONFLICT.value());
+	}
+	
+	public void deveRetornarStatus404_QuandoExcluirCozinhaInexistente() {
+		given()
+			.pathParam("cozinhaId", COZINHA_ID_INEXISTENTE)
+			.accept(ContentType.JSON)
+		.when()
+			.delete("/{cozinhaId}")
+		.then()
+			.statusCode(HttpStatus.NOT_FOUND.value());
+	}
+	
 	private void prepararMassaDeDados () {
 		
 	    Cozinha cozinhaTailandesa = new Cozinha();
@@ -127,6 +166,12 @@ public class CadastroCozinhaIT {
 	    
 	    quantidadeCozinhasCadastradas = (int) cozinhaRepository.count();
 		
+        Restaurante restaurante = new Restaurante();
+        restaurante.setNome("Thai Thai Delivery");
+        restaurante.setTaxaFrete(new BigDecimal(10));
+        restaurante.setCozinha(cozinhaTailandesa);
+        restauranteRepository.save(restaurante);
+	    
 	}
 	
 }
