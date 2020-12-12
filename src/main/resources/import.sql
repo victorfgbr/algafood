@@ -15,9 +15,9 @@ insert into forma_pagamento (id, descricao) values (1, 'Cartão de crédito');
 insert into forma_pagamento (id, descricao) values (2, 'Cartão de débito');
 insert into forma_pagamento (id, descricao) values (3, 'Dinheiro');
 
-insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao) values (1, 'Thai Gourmet', 10, 1, '04324110', 'Rua das Pérolas', '35', 'Apartamento 501', 'Jabaquara', 3, utc_timestamp, utc_timestamp);
-insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao) values  (2, 'Thai Delivery', 9.50, 1, '02208000', 'Rua da Esperança', '850', 'Casa', 'Vila Medeiros', 3, utc_timestamp, utc_timestamp);
-insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao) values  (3, 'Tuk Tuk Comida Indiana', 15, 2, '37568000', 'Rua Maria José', '501', 'Casa', 'Centro', 2, utc_timestamp, utc_timestamp);
+insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao, ativo) values (1, 'Thai Gourmet', 10, 1, '04324110', 'Rua das Pérolas', '35', 'Apartamento 501', 'Jabaquara', 3, utc_timestamp, utc_timestamp, ativo);
+insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao, ativo) values (2, 'Thai Delivery', 9.50, 1, '02208000', 'Rua da Esperança', '850', 'Casa',   'Vila Medeiros', 3, utc_timestamp, utc_timestamp, ativo);
+insert into restaurante (id, nome, taxa_frete, cozinha_id, endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade_id, data_cadastro, data_atualizacao, ativo) values (3, 'Tuk Tuk Comida Indiana', 15, 2, '37568000', 'Rua Maria José', '501', 'Casa',     'Centro', 2, utc_timestamp, utc_timestamp, ativo);
 
 
 insert into permissao (id, nome, descricao) values (1, 'CONSULTAR_COZINHAS', 'Permite consultar cozinhas');

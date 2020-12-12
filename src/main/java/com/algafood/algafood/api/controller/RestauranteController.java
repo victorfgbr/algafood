@@ -123,6 +123,18 @@ public class RestauranteController {
 		return atualizar(restauranteId, restauranteAtualDto);
 	}
 	
+	@PutMapping("/{restauranteId}/ativo")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void ativar (@PathVariable Long restauranteId) {
+		cadastroRestaurante.ativar(restauranteId);
+	}
+	
+	@DeleteMapping("/{restauranteId}/ativo")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void desativar (@PathVariable Long restauranteId) {
+		cadastroRestaurante.desativar(restauranteId);
+	}
+	
 	private void merge (Map<String, Object> camposOrigem, Restaurante restauranteDestino, 
 			HttpServletRequest request) {
 		
